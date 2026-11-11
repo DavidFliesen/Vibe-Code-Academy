@@ -6,7 +6,7 @@
   /* ======================= CONFIG (edit me) ======================= */
   var CONFIG = {
     appName: "Vibe Code Academy",
-    version: "1.0.1",
+    version: "1.1.0",
     liveUrl: "https://vibe-code-academy.pages.dev/",
     producer: "ARTEZIQ",
     creator: "David \"SunTzu\" Fliesen",
@@ -21,6 +21,8 @@
   };
 
   var DATA = window.VCA_DATA || { tracks: [], glossary: [], tips: [] };
+  var UPD = window.VCA_UPDATES || { weeks: [], changelog: [] };
+  if (!UPD.weeks) { UPD.weeks = []; }
   var STORE_KEY = "vca_state_v1";
   var PG_KEY = "vca_pg_code_v1";
 
@@ -121,6 +123,32 @@
   }
   function pad(n) { return n < 10 ? "0" + n : "" + n; }
   function dayKey(d) { d = d || new Date(); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  var MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function niceDate(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || "");
+    return m ? MONTHS_SHORT[parseInt(m[2], 10) - 1] + " " + parseInt(m[3], 10) + ", " + m[1] : "";
+  }
+  function isRecent(iso, days) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || "");
+    if (!m) { return false; }
+    var t = Date.UTC(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+    return Date.now() - t < (days || 30) * 86400000;
+  }
+  function freshPill(l) {
+    if (isRecent(l.added, 30)) { return '<span class="pill pill-new">NEW</span>'; }
+    if (isRecent(l.updated, 30)) { return '<span class="pill pill-upd">UPDATED</span>'; }
+    return "";
+  }
+  function levelTags(levels) {
+    var h = "";
+    for (var i = 0; i < (levels || []).length; i++) {
+      var t = TRACK_MAP[levels[i]];
+      if (t) { h += '<span class="tag" style="border-color:' + t.color + ";color:" + t.color + '">' + t.icon + " " + esc(t.title) + "</span>"; }
+    }
+    return h;
+  }
+  function safeUrl(u) { return /^https:\/\//.test(u || "") ? u : "#"; }
+
   function shareUrl() {
     var here = location.href.split("#")[0];
     return /^https?:/.test(here) ? here : CONFIG.liveUrl;
@@ -275,7 +303,7 @@
     if (state.textLg) { document.body.className = "text-lg"; } else { document.body.className = ""; }
   }
   function setTab(name) {
-    var map = { home: "home", learn: "learn", track: "learn", lesson: "learn", lab: "lab", playground: "playground", progress: "progress", glossary: "home", about: "home" };
+    var map = { home: "home", learn: "learn", track: "learn", lesson: "learn", lab: "lab", playground: "playground", progress: "progress", glossary: "home", about: "home", news: "home" };
     var active = map[name] || "home";
     var links = document.querySelectorAll(".tabbar a");
     for (var i = 0; i < links.length; i++) {
@@ -374,6 +402,7 @@
     h += '<a class="btn secondary" href="#/lab/builder">Try the Prompt Lab</a></div>';
     h += '<div style="margin-top:16px">' + levelBlock() + "</div></section>";
 
+    h += weeklyBlock();
     h += '<div class="section"><div class="section-title"><h2>Choose your path</h2><a href="#/learn" class="dim">All tracks</a></div><div class="grid two">';
     for (var i = 0; i < DATA.tracks.length; i++) { h += trackCard(DATA.tracks[i]); }
     h += "</div></div>";
@@ -393,12 +422,67 @@
     view.innerHTML = h;
   }
 
+  function weeklyBlock() {
+    var w = UPD.weeks[0];
+    if (!w) { return ""; }
+    var h = '<div class="section card news-card"><div class="section-title"><h2>\uD83D\uDCF0 This week in AI</h2><span class="dim">' + esc(niceDate(w.date)) + "</span></div>";
+    h += '<p class="muted">' + esc(w.summary) + "</p>";
+    var news = w.news || [];
+    if (news.length) {
+      h += '<ul class="news-mini">';
+      for (var i = 0; i < news.length && i < 3; i++) { h += "<li>" + esc(news[i].title) + "</li>"; }
+      h += "</ul>";
+    }
+    h += '<div class="btn-row"><a class="btn small" href="#/news">Read the briefing \u2192</a></div>';
+    var spot = w.spotlight || [];
+    var shown = 0, sh = "";
+    for (var s = 0; s < spot.length; s++) {
+      var l = LESSON_MAP[spot[s].lesson];
+      if (!l) { continue; }
+      var t = TRACK_MAP[l.track];
+      shown++;
+      sh += '<a class="card lesson-item spot" href="#/lesson/' + l.id + '"><span class="lesson-num' + (state.done[l.id] ? " done" : "") + '">' + (state.done[l.id] ? "\u2713" : t.icon) + '</span><span class="li-body"><span class="li-title">' + esc(l.title) + "</span>" + freshPill(l) + '<br><span class="dim">' + esc(spot[s].reason) + "</span></span></a>";
+    }
+    if (shown) { h += '<h3 class="spot-head">\uD83D\uDD26 This week\'s focus</h3>' + sh; }
+    return h + "</div>";
+  }
+
+  function renderNews() {
+    var h = "<h1>\uD83D\uDCF0 This week in AI</h1>";
+    h += '<p class="muted">A weekly, sourced briefing on new AI tools and workflows, written for learners. Researched by an AI agent and reviewed before publishing - always click through to the sources.</p>';
+    if (!UPD.weeks.length) {
+      h += '<div class="card center"><p class="muted">The first weekly briefing is on its way. Check back soon!</p><a class="btn secondary" href="#/learn">Keep learning</a></div>';
+    }
+    for (var i = 0; i < UPD.weeks.length; i++) {
+      var w = UPD.weeks[i];
+      h += '<div class="section"><div class="section-title"><h2>' + esc(niceDate(w.date)) + '</h2><span class="dim">v' + esc(w.version || "") + "</span></div>";
+      h += '<p class="muted">' + esc(w.summary) + "</p>";
+      var news = w.news || [];
+      for (var n = 0; n < news.length; n++) {
+        var it = news[n];
+        h += '<article class="card news-item"><h3>' + esc(it.title) + "</h3><div>" + levelTags(it.levels) + "</div>";
+        h += "<p>" + esc(it.summary) + "</p>";
+        h += '<p class="why"><b>Why it matters:</b> ' + esc(it.why) + "</p>";
+        h += '<a class="src" href="' + esc(safeUrl(it.url)) + '" target="_blank" rel="noopener">Source: ' + esc(it.source || it.url) + " \u2197</a></article>";
+      }
+      var spot = w.spotlight || [];
+      for (var s = 0; s < spot.length; s++) {
+        var l = LESSON_MAP[spot[s].lesson];
+        if (l) { h += '<a class="card lesson-item spot" href="#/lesson/' + l.id + '"><span class="lesson-num">\uD83D\uDD26</span><span class="li-body"><span class="li-title">' + esc(l.title) + '</span><br><span class="dim">' + esc(spot[s].reason) + "</span></span></a>"; }
+      }
+      h += "</div>";
+    }
+    h += footer();
+    view.innerHTML = h;
+  }
+
   function renderLearn() {
     var h = "<h1>Learning tracks</h1>";
     h += '<p class="muted">Four tracks, from your very first prompt to building AI agents. Start anywhere - each lesson has a quick quiz, and every completed track earns a shareable certificate.</p>';
     h += '<div class="grid">';
     for (var i = 0; i < DATA.tracks.length; i++) { h += trackCard(DATA.tracks[i]); }
     h += "</div>";
+    if (UPD.weeks.length) { h += '<div class="section"><a class="card" href="#/news"><h3>\uD83D\uDCF0 This week in AI</h3><div class="muted">' + esc(UPD.weeks[0].summary) + "</div></a></div>"; }
     h += '<div class="section card"><h3>How it works</h3><ul style="margin:0;padding-left:20px">' +
       "<li><b>Read and try</b> - short lessons with prompts to copy and code to run</li>" +
       "<li><b>Quiz</b> - get 2 of 3 right to complete a lesson (+50 XP, +20 for a perfect score)</li>" +
@@ -426,7 +510,7 @@
       var l = t.lessons[i];
       var d = state.done[l.id];
       h += '<li><a class="card lesson-item" href="#/lesson/' + l.id + '"><span class="lesson-num' + (d ? " done" : "") + '">' + (d ? "✓" : l.num) + "</span>";
-      h += '<span class="li-body"><span class="li-title">' + esc(l.title) + '</span><br><span class="dim">' + esc(l.summary) + " · " + l.mins + " min</span></span></a></li>";
+      h += '<span class="li-body"><span class="li-title">' + esc(l.title) + "</span>" + freshPill(l) + '<br><span class="dim">' + esc(l.summary) + " · " + l.mins + " min</span></span></a></li>";
     }
     h += "</ul></div>" + footer();
     view.innerHTML = h;
@@ -489,7 +573,7 @@
     save();
     var h = '<div class="crumbs"><a href="#/track/' + t.id + '">← ' + t.icon + " " + esc(t.title) + "</a></div>";
     h += '<div class="lesson-head"><span class="pill" style="color:' + t.color + '">Lesson ' + l.num + " of " + t.lessons.length + '</span><span class="pill">' + l.mins + " min</span>" +
-      (state.done[l.id] ? '<span class="pill" style="color:#34d399">✓ Complete</span>' : "") +
+      freshPill(l) + (state.done[l.id] ? '<span class="pill" style="color:#34d399">✓ Complete</span>' : "") +
       '<h1 style="margin-top:10px">' + esc(l.title) + '</h1><p class="muted">' + esc(l.summary) + "</p></div>";
     h += '<div class="lesson-body">';
     for (var i = 0; i < l.blocks.length; i++) { h += block(l.blocks[i]); }
@@ -497,6 +581,13 @@
     h += '<div class="takeaways"><h2>⭐ Key takeaways</h2><ul>';
     for (var k = 0; k < l.takeaways.length; k++) { h += "<li>" + inline(l.takeaways[k]) + "</li>"; }
     h += "</ul></div>";
+    if (l.sources && l.sources.length) {
+      h += '<div class="sources dim"><b>Sources:</b> ';
+      for (var si = 0; si < l.sources.length; si++) {
+        h += (si ? " \u00B7 " : "") + '<a href="' + esc(safeUrl(l.sources[si])) + '" target="_blank" rel="noopener">[' + (si + 1) + "]</a>";
+      }
+      h += "</div>";
+    }
     h += '<div class="quiz" id="quizBox"></div>';
     var nb = lessonNeighbors(l);
     h += '<div class="lesson-nav">';
@@ -729,6 +820,7 @@
     h += '<div class="section card"><h3>📣 Share your journey</h3><p class="muted">Inspire friends and coworkers to grow their AI skills too.</p><div class="btn-row"><button class="btn" type="button" data-action="share-progress">Share my progress</button></div></div>';
 
     h += '<div class="section card"><h3>More</h3><div class="btn-row">' +
+      '<a class="btn secondary" href="#/news">\uD83D\uDCF0 This week in AI</a>' +
       '<a class="btn secondary" href="#/glossary">📖 Glossary</a>' +
       '<a class="btn secondary" href="#/about">ℹ️ About</a>' +
       '<button class="btn secondary" type="button" data-action="choose-path">🧭 Change my path</button></div>' +
@@ -1007,6 +1099,7 @@
       case "progress": renderProgress(); break;
       case "glossary": renderGlossary(); break;
       case "about": renderAbout(); break;
+      case "news": renderNews(); break;
       default: renderNotFound();
     }
     setTab(name);
