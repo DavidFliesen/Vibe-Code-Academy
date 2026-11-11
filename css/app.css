@@ -261,6 +261,23 @@ body.text-lg .code-edit, body.text-lg .code-view { font-size: 15px; }
 .cert-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid #241f48; }
 .cert-row:last-child { border-bottom: 0; }
 
+/* ---------- News / freshness ---------- */
+.pill-new { background: #fbbf24; color: #1b1300; margin-left: 6px; }
+.pill-upd { background: #0f2633; color: #22d3ee; border: 1px solid #155e75; margin-left: 6px; }
+.li-title + .pill { font-size: 0.7em; vertical-align: middle; }
+.news-card { border-color: #4c3d99; background: #1b1640; }
+.news-mini { margin: 0 0 4px; padding-left: 20px; }
+.news-mini li { margin-bottom: 4px; }
+.spot-head { margin: 18px 0 10px; color: #fbbf24; }
+.card.spot { margin-bottom: 8px; background: #17142e; }
+.news-item { margin-bottom: 12px; }
+.news-item h3 { margin-bottom: 8px; }
+.news-item p { margin: 10px 0 0; }
+.news-item .why { color: #d6d0ff; }
+.news-item .src { display: inline-block; margin-top: 10px; font-weight: 700; word-break: break-word; }
+.tag { display: inline-block; font-size: 0.75em; font-weight: 700; border: 1px solid #3b3470; border-radius: 999px; padding: 2px 9px; margin: 0 6px 4px 0; }
+.sources { margin: -8px 0 16px; font-size: 0.88em; }
+
 /* ---------- Glossary ---------- */
 .gloss-item { padding: 12px 0; border-bottom: 1px solid #241f48; }
 .gloss-item b { color: #22d3ee; }
