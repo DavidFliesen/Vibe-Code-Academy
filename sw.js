@@ -1,8 +1,8 @@
 /* Vibe Code Academy - service worker. ES5 syntax.
    Bump VERSION on every release so phones pick up the new files. */
-var VERSION = "vca-v1.0.0";
+var VERSION = "vca-v1.0.1";
 var PY_CACHE = "vca-pyodide-0.29.5";
-var PY_HOST = "https://cdn.jsdelivr.net/npm/pyodide@";
+var PY_PATH = "/npm/pyodide@"; // Python engine files on the jsDelivr CDN
 
 var SHELL = [
   "./",
@@ -15,6 +15,7 @@ var SHELL = [
   "js/py-worker.js",
   "py/ai_sim.py",
   "data/lessons.js",
+  "assets/icons/icon-96.png",
   "assets/icons/icon-192.png",
   "assets/icons/icon-512.png",
   "assets/icons/maskable-512.png",
@@ -23,7 +24,10 @@ var SHELL = [
 
 self.addEventListener("install", function (event) {
   event.waitUntil(
-    caches.open(VERSION).then(function (cache) { return cache.addAll(SHELL); }).then(function () { return self.skipWaiting(); })
+    caches.open(VERSION).then(function (cache) {
+      // cache: "reload" skips the browser's HTTP cache so a new version never stores stale files
+      return cache.addAll(SHELL.map(function (u) { return new Request(u, { cache: "reload" }); }));
+    }).then(function () { return self.skipWaiting(); })
   );
 });
 
@@ -44,7 +48,7 @@ self.addEventListener("fetch", function (event) {
   var url = req.url;
 
   // Python engine from the CDN: cache-first, kept across app versions.
-  if (url.indexOf(PY_HOST) === 0) {
+  if (url.indexOf(self.location.origin) !== 0 && url.indexOf(PY_PATH) > 0) {
     event.respondWith(
       caches.open(PY_CACHE).then(function (cache) {
         return cache.match(req).then(function (hit) {
