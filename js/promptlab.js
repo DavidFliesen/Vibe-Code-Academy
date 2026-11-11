@@ -279,6 +279,7 @@
     o.push("Build a web app called \"" + name + "\".");
     if (trim(b.goal)) { o.push("Goal: " + trim(b.goal)); }
     if (trim(b.users)) { o.push("Who it's for: " + trim(b.users) + (b.device ? " (mainly on " + b.device + ")" : "")); }
+    else if (b.device) { o.push("Main device: " + b.device); }
     if (musts.length) { o.push("Must-have features:\n- " + musts.join("\n- ")); }
     if (nice.length) { o.push("Nice-to-have features (NOT now - save for later versions):\n- " + nice.join("\n- ")); }
     if (trim(b.look)) { o.push("Look and feel: " + trim(b.look)); }

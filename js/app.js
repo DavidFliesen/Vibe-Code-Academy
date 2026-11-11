@@ -6,8 +6,8 @@
   /* ======================= CONFIG (edit me) ======================= */
   var CONFIG = {
     appName: "Vibe Code Academy",
-    version: "1.0.0",
-    liveUrl: "https://davidfliesen.github.io/Vibe-Code-Academy/",
+    version: "1.0.1",
+    liveUrl: "https://vibe-code-academy.pages.dev/",
     producer: "ARTEZIQ",
     creator: "David \"SunTzu\" Fliesen",
     creatorTitle: "Hybrid Generative AI Multimedia Developer",
@@ -129,6 +129,7 @@
   var toastTimer = null, toastQueue = [];
   function toast(msg) {
     toastQueue.push(msg);
+    while (toastQueue.length > 3) { toastQueue.shift(); }
     if (!toastTimer) { nextToast(); }
   }
   function nextToast() {
@@ -136,10 +137,11 @@
     if (!toastQueue.length) { toastTimer = null; el.className = ""; return; }
     el.textContent = toastQueue.shift();
     el.className = "show";
+    var ms = toastQueue.length > 1 ? 1100 : 1800;
     toastTimer = setTimeout(function () {
       el.className = "";
       toastTimer = setTimeout(nextToast, 220);
-    }, 1800);
+    }, ms);
   }
 
   function copy(text, msg) {
@@ -287,6 +289,8 @@
     m.innerHTML = '<div class="modal" role="dialog" aria-modal="true">' + html + "</div>";
     m.className = "modal-wrap open";
     m.setAttribute("aria-hidden", "false");
+    var title = m.querySelector("h2");
+    if (title) { title.id = "modalTitle"; m.firstChild.setAttribute("aria-labelledby", "modalTitle"); }
   }
   function closeModal() {
     var m = $("modal");
@@ -384,7 +388,7 @@
       h += '<div class="section callout tip"><div class="ch">Tip of the day</div><p>' + inline(tip) + "</p></div>";
     }
 
-    h += '<div class="section card guide-card"><div class="guide-avatar"><img src="assets/icons/icon-192.png" alt=""></div><div><b>Meet your guide</b><div class="muted">Built by ' + esc(CONFIG.creator) + ", " + esc(CONFIG.creatorTitle) + '.</div><a href="#/about">About the academy →</a></div></div>';
+    h += '<div class="section card guide-card"><div class="guide-avatar"><img src="assets/icons/icon-96.png" alt=""></div><div><b>Meet your guide</b><div class="muted">Built by ' + esc(CONFIG.creator) + ", " + esc(CONFIG.creatorTitle) + '.</div><a href="#/about">About the academy →</a></div></div>';
     h += footer();
     view.innerHTML = h;
   }
@@ -432,7 +436,7 @@
     var h = "", i;
     switch (b.t) {
       case "p": return "<p>" + inline(b.x) + "</p>";
-      case "h": return "<h3>" + inline(b.x) + "</h3>";
+      case "h": return "<h2>" + inline(b.x) + "</h2>";
       case "list":
         h = "<ul>";
         for (i = 0; i < b.items.length; i++) { h += "<li>" + inline(b.items[i]) + "</li>"; }
@@ -490,7 +494,7 @@
     h += '<div class="lesson-body">';
     for (var i = 0; i < l.blocks.length; i++) { h += block(l.blocks[i]); }
     h += "</div>";
-    h += '<div class="takeaways"><h3>⭐ Key takeaways</h3><ul>';
+    h += '<div class="takeaways"><h2>⭐ Key takeaways</h2><ul>';
     for (var k = 0; k < l.takeaways.length; k++) { h += "<li>" + inline(l.takeaways[k]) + "</li>"; }
     h += "</ul></div>";
     h += '<div class="quiz" id="quizBox"></div>';
@@ -509,7 +513,7 @@
     var box = $("quizBox");
     if (!box || !QUIZ) { return; }
     var l = QUIZ.lesson;
-    var h = "<h3>🧠 Quick quiz</h3>";
+    var h = "<h2>🧠 Quick quiz</h2>";
     if (state.done[l.id]) { h += '<p class="dim">Already complete (best score ' + state.done[l.id].score + "/3). Retake it anytime.</p>"; }
     for (var q = 0; q < l.quiz.length; q++) {
       var item = l.quiz[q];
@@ -963,7 +967,7 @@
     var h = "<h1>About the academy</h1>";
     h += '<div class="card"><p><b>' + esc(CONFIG.appName) + "</b> helps people of every age and skill level learn to work with AI - starting with plain-English prompting and vibe coding, and growing into Python, LLM APIs, tool use, agents, RAG and evals.</p>";
     h += '<p class="muted">Everything runs on your device. No account, no tracking, no ads. Lessons work offline after your first visit.</p></div>';
-    h += '<div class="section card"><div class="guide-card" style="margin-bottom:12px"><div class="guide-avatar"><img src="assets/icons/icon-192.png" alt=""></div><div><h3 style="margin:0">' + esc(CONFIG.creator) + '</h3><div class="muted">' + esc(CONFIG.creatorTitle) + "</div></div></div>";
+    h += '<div class="section card"><div class="guide-card" style="margin-bottom:12px"><div class="guide-avatar"><img src="assets/icons/icon-96.png" alt=""></div><div><h3 style="margin:0">' + esc(CONFIG.creator) + '</h3><div class="muted">' + esc(CONFIG.creatorTitle) + "</div></div></div>";
     for (var i = 0; i < CONFIG.bio.length; i++) { h += "<p>" + esc(CONFIG.bio[i]) + "</p>"; }
     h += '<div class="btn-row"><a class="btn cyan" href="' + esc(CONFIG.portfolioUrl) + '" target="_blank" rel="noopener">Visit my portfolio</a>' +
       '<a class="btn secondary" href="' + esc(CONFIG.githubUrl) + '" target="_blank" rel="noopener">GitHub</a></div></div>';
