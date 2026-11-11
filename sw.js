@@ -1,6 +1,6 @@
 /* Vibe Code Academy - service worker. ES5 syntax.
    Bump VERSION on every release so phones pick up the new files. */
-var VERSION = "vca-v1.0.1";
+var VERSION = "vca-v1.1.0";
 var PY_CACHE = "vca-pyodide-0.29.5";
 var PY_PATH = "/npm/pyodide@"; // Python engine files on the jsDelivr CDN
 
@@ -15,6 +15,7 @@ var SHELL = [
   "js/py-worker.js",
   "py/ai_sim.py",
   "data/lessons.js",
+  "data/updates.js",
   "assets/icons/icon-96.png",
   "assets/icons/icon-192.png",
   "assets/icons/icon-512.png",
