@@ -1,1 +1,87 @@
+# Vibe Code Academy - weekly AI curriculum agent (ARTEZIQ)
+# Runs every Monday. Researches what's new in AI, proposes updates, validates them,
+# and opens a pull request for review (or publishes directly if VCA_AUTO_PUBLISH is true).
+name: Weekly AI Curriculum Update
 
+on:
+  schedule:
+    - cron: "17 11 * * 1"   # Mondays 11:17 UTC (6:17 AM Eastern)
+  workflow_dispatch:
+    inputs:
+      mock:
+        description: "Test run with sample data (no API cost)"
+        type: boolean
+        default: false
+      auto_publish:
+        description: "Publish straight to main instead of opening a review PR"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: weekly-ai-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the Claude SDK
+        run: pip install -r .github/scripts/requirements.txt
+
+      - name: Run the curriculum agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          VCA_MODEL: ${{ vars.VCA_MODEL }}
+          VCA_MAX_SEARCHES: ${{ vars.VCA_MAX_SEARCHES }}
+          VCA_REVIEW: ${{ vars.VCA_REVIEW }}
+          MOCK_FLAG: ${{ inputs.mock && '--mock' || '' }}
+        run: python .github/scripts/update_academy.py $MOCK_FLAG --summary-file "$RUNNER_TEMP/summary.md"
+
+      - name: Add the summary to this run's page
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/summary.md" ]; then cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY"; fi
+
+      - name: Open a review PR (or publish)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUTO_PUBLISH: ${{ (inputs.auto_publish || vars.VCA_AUTO_PUBLISH == 'true') && !inputs.mock }}
+          IS_MOCK: ${{ inputs.mock }}
+          BASE_BRANCH: ${{ github.ref_name }}
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No changes this week - nothing to publish."
+            exit 0
+          fi
+          VER=$(python .github/scripts/update_academy.py --print-version)
+          git config user.name "ARTEZIQ Curriculum Agent"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ "$AUTO_PUBLISH" = "true" ]; then
+            git add -A
+            git commit -m "Weekly AI update v$VER"
+            git push origin "HEAD:$BASE_BRANCH"
+            echo "Published v$VER to $BASE_BRANCH."
+          else
+            PREFIX="ai-update"
+            TITLE="Weekly AI update v$VER"
+            if [ "$IS_MOCK" = "true" ]; then PREFIX="ai-update-test"; TITLE="[TEST - close me] $TITLE"; fi
+            BRANCH="$PREFIX/v$VER-$(date +%Y%m%d%H%M)"
+            git checkout -b "$BRANCH"
+            git add -A
+            git commit -m "$TITLE"
+            git push -u origin "$BRANCH"
+            gh pr create --base "$BASE_BRANCH" --head "$BRANCH" --title "$TITLE" --body-file "$RUNNER_TEMP/summary.md"
+          fi
