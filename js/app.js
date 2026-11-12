@@ -6,7 +6,7 @@
   /* ======================= CONFIG (edit me) ======================= */
   var CONFIG = {
     appName: "Vibe Code Academy",
-    version: "1.1.0",
+    version: "1.1.1",
     liveUrl: "https://vibe-code-academy.pages.dev/",
     producer: "ARTEZIQ",
     creator: "David \"SunTzu\" Fliesen",
