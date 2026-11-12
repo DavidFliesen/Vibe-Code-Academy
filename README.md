@@ -1,6 +1,6 @@
-# Vibe Code Academy — v1.1.0
+# Vibe Code Academy — v1.1.1
 
-**▶ Live app (Cloudflare Pages):** https://vibe-code-academy.pages.dev/
+**▶ Live app (Cloudflare):** https://vibe-code-academy.<your-subdomain>.workers.dev/ (exact address shown in Cloudflare after the first deploy)
 **GitHub repo:** https://github.com/DavidFliesen/Vibe-Code-Academy
 
 *Learn to build with AI — in plain English first, then in Python.*
@@ -43,7 +43,7 @@ Every Monday a GitHub Action runs `.github/scripts/update_academy.py`:
 2. **Plan** — Claude proposes news items, lesson spotlights, small lesson edits, new glossary terms and tips, and occasionally a brand-new lesson.
 3. **Self-review** — a second Claude pass fact-checks every proposed change against the sources.
 4. **Validate** — Python checks everything: every source URL must have appeared in the real search results, quizzes must be well-formed, and lesson code must actually run. Nothing is ever deleted.
-5. **Publish** — the version number goes up, this README is regenerated, and a **pull request** opens with a summary of every change and every rejected idea. Cloudflare Pages builds a preview of the PR so you can try it before merging. Merge it to go live.
+5. **Publish** — the version number goes up, this README is regenerated, and a **pull request** opens with a summary of every change and every rejected idea. Cloudflare builds a preview of the PR so you can try it before merging. Merge it to go live.
 
 ### One-time setup
 
@@ -60,18 +60,21 @@ Every Monday a GitHub Action runs `.github/scripts/update_academy.py`:
 | `VCA_REVIEW` | `true` | Set `false` to skip the self-review pass |
 | `VCA_AUTO_PUBLISH` | `false` | Set `true` to commit straight to main and skip the review PR |
 
-## Hosting on Cloudflare Pages
+## Hosting on Cloudflare
 
-Plain static files — no build step. Cloudflare Pages deploys from this repo on every commit to main, and builds a preview for every pull request.
+The app is plain static files served by Cloudflare Workers, connected to this GitHub repo. Every commit to main redeploys automatically, and pull requests (like the weekly AI updates) get their own preview link.
 
-1. Cloudflare dashboard → **Workers & Pages → Create → Pages → Connect to Git**.
-2. Pick the **Vibe-Code-Academy** repo → **Begin setup**. Project name: **vibe-code-academy**.
-3. Production branch **main**, Framework preset **None**, Build command **(blank)**, Build output directory **/**.
-4. **Save and Deploy.**
+1. Cloudflare dashboard → **Workers & Pages → Create application → Import a repository** → pick **Vibe-Code-Academy**.
+2. Project name **vibe-code-academy**. Build command **blank**. Deploy command **`npx wrangler deploy`**. Preview command **`npx wrangler preview`**.
+3. Leave **Enable Preview builds** on and **Protect with Cloudflare Access** off (the site is public).
+4. **Deploy.** Cloudflare shows the live address (`vibe-code-academy.<your-subdomain>.workers.dev`).
 
-If you get a different address, update `liveUrl` in `js/app.js`, the `og:url` / `og:image` tags in `index.html`, and `LIVE_URL` in `.github/scripts/update_academy.py`.
+Once you know the address, put it in `liveUrl` in `js/app.js`, the `og:url` / `og:image` tags in `index.html`, and `LIVE_URL` in `.github/scripts/update_academy.py`.
 
-`_headers` adds security headers (a Content Security Policy that only allows the app's own files plus the Pyodide engine from `cdn.jsdelivr.net`) and caching rules (`sw.js` and `index.html` always re-checked; images cached for a week).
+Config files:
+- `wrangler.jsonc` — tells Cloudflare to publish the repo root as the website.
+- `.assetsignore` — keeps repo-only files (`.github`, `README.md`, `wrangler.jsonc`) off the public site.
+- `_headers` — security headers (a Content Security Policy that only allows the app's own files plus the Pyodide engine from `cdn.jsdelivr.net`) and caching rules (`sw.js` and the home page always re-checked; images cached for a week).
 
 ## File structure
 
@@ -79,7 +82,8 @@ If you get a different address, update `liveUrl` in `js/app.js`, the `og:url` / 
 index.html                         App shell
 manifest.webmanifest               PWA manifest
 sw.js                              Service worker (offline cache)
-_headers                           Cloudflare Pages security + caching headers
+_headers                           Cloudflare security + caching headers
+wrangler.jsonc / .assetsignore     Cloudflare Workers config / files kept off the site
 css/app.css                        Styles (hardcoded hex colors)
 js/app.js                          App logic, router, views, XP/badges, certificates, news
 js/promptlab.js                    Prompt Builder, Checkup and App Brief
@@ -103,6 +107,7 @@ All app JavaScript is ES5 (no `let`/`const`, arrow functions or template literal
 
 ## Version history
 
+- **v1.1.1** (2026-11-12) — Cloudflare Workers hosting (wrangler.jsonc + .assetsignore so repo tools stay private); fixed offline reload caching the redirected index.html.
 - **v1.1.0** (2026-11-10) — Weekly AI curriculum agent (GitHub Action + Claude web search) with self-review and validation; new "This week in AI" section, weekly lesson spotlights, and NEW/UPDATED lesson tags.
 - **v1.0.1** (2026-11-10) — Cloudflare Pages hosting with security and caching headers; quiz answers shuffled; small-phone layout, accessibility and service-worker fixes.
 - **v1.0.0** (2026-11-10) — First release: 4 tracks / 24 lessons with quizzes, in-browser Python with ai_sim, Prompt Lab, XP, badges, certificates, sharing, glossary and offline PWA.

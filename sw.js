@@ -1,12 +1,11 @@
 /* Vibe Code Academy - service worker. ES5 syntax.
    Bump VERSION on every release so phones pick up the new files. */
-var VERSION = "vca-v1.1.0";
+var VERSION = "vca-v1.1.1";
 var PY_CACHE = "vca-pyodide-0.29.5";
 var PY_PATH = "/npm/pyodide@"; // Python engine files on the jsDelivr CDN
 
 var SHELL = [
   "./",
-  "index.html",
   "manifest.webmanifest",
   "css/app.css",
   "js/app.js",
@@ -76,7 +75,7 @@ self.addEventListener("fetch", function (event) {
           }
           return res;
         })["catch"](function () {
-          if (req.mode === "navigate") { return caches.match("index.html"); }
+          if (req.mode === "navigate") { return caches.match("./"); }
           return new Response("Offline", { status: 503, statusText: "Offline" });
         });
       })
