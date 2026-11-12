@@ -4,6 +4,11 @@ var VCA_UPDATES = {
  "weeks": [],
  "changelog": [
   {
+   "version": "1.1.1",
+   "date": "2026-11-12",
+   "summary": "Cloudflare Workers hosting (wrangler.jsonc + .assetsignore so repo tools stay private); fixed offline reload caching the redirected index.html."
+  },
+  {
    "version": "1.1.0",
    "date": "2026-11-10",
    "summary": "Weekly AI curriculum agent (GitHub Action + Claude web search) with self-review and validation; new \"This week in AI\" section, weekly lesson spotlights, and NEW/UPDATED lesson tags."
